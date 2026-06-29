@@ -740,7 +740,7 @@ table.flights tr.warn-row td{background:rgba(245,158,11,.06)!important;}
           <button class="cat-btn" data-cat="FA_SENIOR">FA Senior</button>
           <button class="cat-btn" data-cat="FA_JUNIOR">FA Junior</button>
         </div>
-        <div id="catRateInfo" style="margin-top:10px;font-size:.69rem;font-family:var(--mono);color:var(--tx3);line-height:1.8;"></div>
+        <div style="margin-top:8px;font-size:.65rem;color:var(--tx3);font-family:var(--mono);">Selected category affects your pay calculation.</div>
       </div>
     </div>
     <div class="card">
@@ -787,9 +787,9 @@ table.flights tr.warn-row td{background:rgba(245,158,11,.06)!important;}
         <div class="gauge-lbl"><span>BLK HRS</span><span>00:00</span></div>
         <div class="gauge-track" style="position:relative;"><div class="gauge-t1" style="width:0%"></div><div class="gauge-t2" style="width:0%"></div><div class="gauge-mark" style="left:87%;"></div></div>
         <div class="gauge-stats">
-          <div class="gs"><div class="gl">Tier 1</div><div class="gv t1">00:00</div><div class="gr">$13.50</div></div>
-          <div class="gs"><div class="gl">Tier 2</div><div class="gv t2">00:00</div><div class="gr">$32.00</div></div>
-          <div class="gs"><div class="gl">Act. CM</div><div class="gv cm">00:00</div><div class="gr">$20.00</div></div>
+          <div class="gs"><div class="gl">Tier 1</div><div class="gv t1">00:00</div><div class="gr" style="font-size:.6rem;color:var(--tx3);">≤ 75 hrs</div></div>
+          <div class="gs"><div class="gl">Tier 2</div><div class="gv t2">00:00</div><div class="gr" style="font-size:.6rem;color:var(--tx3);">&gt; 75 hrs</div></div>
+          <div class="gs"><div class="gl">Acting</div><div class="gv cm">00:00</div><div class="gr"></div></div>
         </div>
       </div>
     </div>
@@ -851,6 +851,24 @@ table.flights tr.warn-row td{background:rgba(245,158,11,.06)!important;}
     </div>
     <button id="btnDisclaimerOk" style="width:100%;background:var(--purple);color:#fff;border:none;border-radius:12px;padding:15px;font-size:.86rem;font-weight:700;cursor:pointer;font-family:var(--sans);letter-spacing:.01em;" onmousedown="this.style.opacity='.8'" onmouseup="this.style.opacity='1'" ontouchend="this.style.opacity='1'">Got it &#8212; Open Calculator</button>
     <div style="margin-top:10px;font-size:.62rem;color:var(--tx3);text-align:center;">Shown once. Results are estimates &#183; check with HR for final figures.</div>
+  </div>
+</div>
+<!-- CATEGORY PICKER OVERLAY (shown on first launch only) -->
+<div id="category-overlay" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.88);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--card);border:1px solid var(--b1);border-radius:20px;max-width:360px;width:100%;padding:28px 22px;box-shadow:0 12px 48px rgba(0,0,0,.6);">
+    <div style="text-align:center;margin-bottom:22px;">
+      <div style="font-size:2rem;margin-bottom:8px;">✈️</div>
+      <div style="font-size:1rem;font-weight:700;color:var(--tx1);">Select Your Category</div>
+      <div style="font-size:.68rem;color:var(--tx3);font-family:var(--mono);margin-top:4px;">This is set once and saved to your device</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+      <button class="cat-pick-btn" data-cat="CS" style="padding:18px 10px;border-radius:14px;border:1.5px solid var(--b1);background:rgba(255,255,255,.03);color:var(--tx2);font-size:.85rem;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .18s;">CS</button>
+      <button class="cat-pick-btn" data-cat="CM" style="padding:18px 10px;border-radius:14px;border:1.5px solid var(--b1);background:rgba(255,255,255,.03);color:var(--tx2);font-size:.85rem;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .18s;">CM</button>
+      <button class="cat-pick-btn" data-cat="FA_SENIOR" style="padding:18px 10px;border-radius:14px;border:1.5px solid var(--b1);background:rgba(255,255,255,.03);color:var(--tx2);font-size:.85rem;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .18s;">FA Senior</button>
+      <button class="cat-pick-btn" data-cat="FA_JUNIOR" style="padding:18px 10px;border-radius:14px;border:1.5px solid var(--b1);background:rgba(255,255,255,.03);color:var(--tx2);font-size:.85rem;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .18s;">FA Junior</button>
+    </div>
+    <button id="btnCategoryConfirm" disabled style="width:100%;background:var(--purple);color:#fff;border:none;border-radius:12px;padding:15px;font-size:.86rem;font-weight:700;cursor:pointer;font-family:var(--sans);opacity:.4;transition:opacity .2s;">Confirm &amp; Open Calculator</button>
+    <div style="margin-top:10px;font-size:.61rem;color:var(--tx3);text-align:center;">You can change this later in the Inputs tab.</div>
   </div>
 </div>
 <!-- PWA INSTALL BANNER -->
@@ -2229,9 +2247,9 @@ function renderTierGauge(fp) {
       </div>
     </div>
     <div class="gauge-stats">
-      <div class="gs"><div class="gs-l">Tier 1</div><div class="gs-v t1">${minutesToHHMM(fp.tier1Min)}</div><div class="gs-r">$${getRates().tier1.toFixed(2)}</div></div>
-      <div class="gs"><div class="gs-l">Tier 2</div><div class="gs-v t2">${minutesToHHMM(fp.tier2Min)}</div><div class="gs-r">$${getRates().tier2.toFixed(2)}</div></div>
-      ${getRates().actingLabel ? `<div class="gs"><div class="gs-l">Act. ${getRates().actingLabel}</div><div class="gs-v cm">${minutesToHHMM(fp.actingCMMin)}</div><div class="gs-r">$${getRates().actingRate.toFixed(2)}</div></div>` : ''}
+      <div class="gs"><div class="gs-l">Tier 1</div><div class="gs-v t1">${minutesToHHMM(fp.tier1Min)}</div><div class="gs-r" style="color:var(--tx3);font-size:.6rem;">≤ 75 hrs</div></div>
+      <div class="gs"><div class="gs-l">Tier 2</div><div class="gs-v t2">${minutesToHHMM(fp.tier2Min)}</div><div class="gs-r" style="color:var(--tx3);font-size:.6rem;">&gt; 75 hrs</div></div>
+      ${getRates().actingLabel ? `<div class="gs"><div class="gs-l">Act. ${getRates().actingLabel}</div><div class="gs-v cm">${minutesToHHMM(fp.actingCMMin)}</div><div class="gs-r"></div></div>` : ''}
     </div>
   `;
 }
@@ -2649,10 +2667,6 @@ renderTierGauge({tier1Min:0,tier2Min:0,actingCMMin:0,overrideUsed:false,totalBlo
 function updateCatUI() {
   const cat = state.category;
   document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
-  const r = getRates();
-  const actingLine = r.actingLabel ? `Act. ${r.actingLabel} &nbsp;$${r.actingRate.toFixed(2)}/hr` : 'No Acting column';
-  const el = document.getElementById('catRateInfo');
-  if (el) el.innerHTML = `Tier 1 &nbsp;$${r.tier1.toFixed(2)}/hr &nbsp;·&nbsp; Above 75hrs &nbsp;$${r.tier2.toFixed(2)}/hr<br>Overnight &nbsp;$${r.overnight.toFixed(2)}/duty &nbsp;·&nbsp; ${actingLine}`;
 }
 
 document.querySelectorAll('.cat-btn').forEach(b => {
@@ -2664,6 +2678,44 @@ document.querySelectorAll('.cat-btn').forEach(b => {
 });
 
 updateCatUI();
+
+// ---------- First-launch category picker overlay ----------
+(function() {
+  const overlay = document.getElementById('category-overlay');
+  if (!overlay) return;
+
+  // Show if no category saved yet
+  if (!localStorage.getItem('sla_category')) {
+    overlay.style.display = 'flex';
+  }
+
+  let pickedCat = null;
+  const confirmBtn = document.getElementById('btnCategoryConfirm');
+
+  document.querySelectorAll('.cat-pick-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      pickedCat = b.dataset.cat;
+      document.querySelectorAll('.cat-pick-btn').forEach(x => {
+        x.style.borderColor = 'var(--b1)';
+        x.style.color = 'var(--tx2)';
+        x.style.background = 'rgba(255,255,255,.03)';
+      });
+      b.style.borderColor = 'var(--purple3)';
+      b.style.color = 'var(--purple3)';
+      b.style.background = 'rgba(124,58,237,.15)';
+      confirmBtn.disabled = false;
+      confirmBtn.style.opacity = '1';
+    });
+  });
+
+  confirmBtn.addEventListener('click', () => {
+    if (!pickedCat) return;
+    state.category = pickedCat;
+    localStorage.setItem('sla_category', pickedCat);
+    updateCatUI();
+    overlay.style.display = 'none';
+  });
+})();
 
 
 
