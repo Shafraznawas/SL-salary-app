@@ -2573,6 +2573,9 @@ $('blockHoursOverride').addEventListener('input',function(){
   this.value=v;
 });
 
+// Nav buttons
+document.querySelectorAll('.nav-btn').forEach(function(b){b.addEventListener('click',function(){goTo(b.dataset.page);});});
+
 // init
 renderHistoryPanel();
 renderChecklist([]);
