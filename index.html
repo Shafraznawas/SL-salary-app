@@ -2305,7 +2305,7 @@ function renderResults(c) {
       c.overnightAllowance.details.forEach((d, idx) => {
         html += `<div class="bk-row bk-sub-row" style="padding-left:20px;opacity:.85;">
           <span class="bk-lbl" style="font-size:.72rem;">↳ Duty ${idx+1}</span>
-          <span class="bk-val" style="font-size:.72rem;color:var(--green);">+ $20.00</span>
+          <span class="bk-val" style="font-size:.72rem;color:var(--green);">+ $${getRates().overnight.toFixed(2)}</span>
         </div>`;
       });
     }
