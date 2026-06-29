@@ -706,7 +706,10 @@ table.flights tr.warn-row td{background:rgba(245,158,11,.06)!important;}
       <div class="stat-card"><div class="ghost">🧳</div><div class="s-lbl">Layovers / P</div><div class="s-val" id="statLayovers">0L / 0P</div></div>
     </div>
     <div class="net-hero">
-      <div class="nh-lbl">Net Monthly Take-Home</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+        <div class="nh-lbl">Net Monthly Take-Home</div>
+        <span id="catBadge" style="font-size:.58rem;font-family:var(--mono);font-weight:700;background:rgba(124,58,237,.18);border:1px solid rgba(124,58,237,.35);color:var(--purple3);border-radius:20px;padding:2px 8px;white-space:nowrap;"></span>
+      </div>
       <div class="nh-amt" id="netSalaryDisplay">LKR —</div>
       <div class="nh-tag" id="netSalaryTag">Tap Roster tab → upload PDF → tap ⚡ Calculate</div>
     </div>
@@ -2298,7 +2301,7 @@ function renderResults(c) {
     });
   }
   if (c.overnightAllowanceLKR > 0) {
-    html += row('Overnight Allowance', '+ ' + fmtLKR(c.overnightAllowanceLKR), `${c.overnightAllowance.count} duty · $20 each · Non-taxable`);
+    html += row('Overnight Allowance', '+ ' + fmtLKR(c.overnightAllowanceLKR), `${c.overnightAllowance.count} duty · $${getRates().overnight.toFixed(0)} each · Non-taxable`);
     if (c.overnightAllowance.details && c.overnightAllowance.details.length > 0) {
       c.overnightAllowance.details.forEach((d, idx) => {
         html += `<div class="bk-row bk-sub-row" style="padding-left:20px;opacity:.85;">
@@ -2491,7 +2494,7 @@ $('btnExportPDF').addEventListener('click', () => {
   y += 4;
 
   doc.setFont(undefined,'bold'); doc.text('D. Non-Taxable', 14, y); y += 6; doc.setFont(undefined,'normal');
-  addLine('Overnight Allowance (USD 20)', fmtLKR(c.overnightAllowanceLKR));
+  addLine(`Overnight Allowance (USD ${getRates().overnight.toFixed(0)})`, fmtLKR(c.overnightAllowanceLKR));
   y += 6;
 
   doc.setFontSize(13); doc.setFont(undefined,'bold');
@@ -2655,6 +2658,9 @@ renderTierGauge({tier1Min:0,tier2Min:0,actingCMMin:0,overrideUsed:false,totalBlo
 function updateCatUI() {
   const cat = state.category;
   document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
+  const labels = { CS: 'CS', CM: 'CM', FA_SENIOR: 'FA Senior', FA_JUNIOR: 'FA Junior' };
+  const badge = document.getElementById('catBadge');
+  if (badge) badge.textContent = labels[cat] || cat;
 }
 
 document.querySelectorAll('.cat-btn').forEach(b => {
