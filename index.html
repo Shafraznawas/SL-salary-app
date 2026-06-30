@@ -2675,6 +2675,26 @@ document.querySelectorAll('.cat-btn').forEach(b => {
 
 updateCatUI();
 
+// ---------- Hidden admin reset: tap designation 5x rapidly ----------
+(function() {
+  const desig = document.getElementById('topDesig');
+  if (!desig) return;
+  let taps = 0, timer = null;
+  desig.addEventListener('click', () => {
+    taps++;
+    clearTimeout(timer);
+    if (taps >= 5) {
+      taps = 0;
+      localStorage.removeItem('sla_category');
+      state.category = 'CS';
+      const overlay = document.getElementById('category-overlay');
+      if (overlay) overlay.style.display = 'flex';
+    } else {
+      timer = setTimeout(() => { taps = 0; }, 1500);
+    }
+  });
+})();
+
 // ---------- First-launch category picker overlay ----------
 (function() {
   const overlay = document.getElementById('category-overlay');
