@@ -2280,6 +2280,7 @@ function fmtTax(n) { return 'LKR ' + (n||0).toLocaleString('en-LK', {minimumFrac
 function fmtUSD(n) { return '$' + (n||0).toFixed(2); }
 
 function renderTierGauge(fp) {
+  if (!$('tierGaugeArea')) return;
   const totalMin = fp.tier1Min + fp.tier2Min + fp.actingCMMin;
   const thresholdMin = 75 * 60;
   const scaleMax = Math.max(totalMin, thresholdMin * 1.15);
