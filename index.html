@@ -848,6 +848,7 @@ table.flights tr.warn-row td{background:rgba(245,158,11,.06)!important;}
       <button class="cat-pick-btn" data-cat="CM" style="padding:18px 10px;border-radius:14px;border:1.5px solid var(--b1);background:rgba(255,255,255,.03);color:var(--tx2);font-size:.75rem;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .18s;line-height:1.4;text-align:center;"><span style="font-size:.95rem;display:block;">CM</span>Cabin Manager</button>
       <button class="cat-pick-btn" data-cat="FA_SENIOR" style="padding:18px 10px;border-radius:14px;border:1.5px solid var(--b1);background:rgba(255,255,255,.03);color:var(--tx2);font-size:.75rem;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .18s;line-height:1.4;text-align:center;"><span style="font-size:.95rem;display:block;">FA</span>Flight Attendant C3</button>
       <button class="cat-pick-btn" data-cat="FA_JUNIOR" style="padding:18px 10px;border-radius:14px;border:1.5px solid var(--b1);background:rgba(255,255,255,.03);color:var(--tx2);font-size:.75rem;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .18s;line-height:1.4;text-align:center;"><span style="font-size:.95rem;display:block;">FA</span>Flight Attendant C1 / C2</button>
+      <button class="cat-pick-btn" data-cat="FA_C" style="padding:18px 10px;border-radius:14px;border:1.5px solid var(--b1);background:rgba(255,255,255,.03);color:var(--tx2);font-size:.75rem;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .18s;line-height:1.4;text-align:center;grid-column:1/-1;"><span style="font-size:.95rem;display:block;">FA</span>Flight Attendant C &nbsp;·&nbsp; No Turn / No Meal Deduction</button>
     </div>
     <button id="btnCategoryConfirm" disabled style="width:100%;background:var(--purple);color:#fff;border:none;border-radius:12px;padding:15px;font-size:.86rem;font-weight:700;cursor:pointer;font-family:var(--sans);opacity:.4;transition:opacity .2s;">Confirm &amp; Open Calculator</button>
   </div>
@@ -1009,6 +1010,7 @@ function getRates() {
     case 'CM':        return { tier1: 20.00, tier2: 38.00, overnight: 30.00, actingLabel: null,  actingRate: 0 };
     case 'FA_SENIOR': return { tier1:  8.50, tier2: 26.00, overnight: 18.00, actingLabel: 'CS',  actingRate: 13.50 };
     case 'FA_JUNIOR': return { tier1:  6.50, tier2: 26.00, overnight: 15.00, actingLabel: 'CS',  actingRate: 13.50 };
+    case 'FA_C':      return { tier1:  6.50, tier2: 26.00, overnight: 15.00, actingLabel: 'CS',  actingRate: 13.50, noTurnaround: true, noMealDeductions: true };
     default:          return { tier1: 13.50, tier2: 32.00, overnight: 20.00, actingLabel: 'CM',  actingRate: 20.00 };
   }
 }
@@ -1597,6 +1599,7 @@ function calculateFlyingPay(sectors, hasLeave) {
  * applies the 4hr threshold rule. Layover duties get USD 0 turnaround pay.
  */
 function calculateTurnaroundPay(sectors) {
+  if (getRates().noTurnaround) return { turnaroundCount: 0, totalUSD: 0, details: [] };
   const dutyGroups = {};
   sectors.forEach(s => {
     if (!dutyGroups[s.dutyId]) dutyGroups[s.dutyId] = [];
@@ -1679,6 +1682,7 @@ function getDutyPeriodForSector(sector) { return null; }
 function checkMealOverlap() { return false; }
 
 function calculateMealDeductions(sectors) {
+  if (getRates().noMealDeductions) return { totalUSD: 0, details: [] };
   // Sort sectors by seqIndex (parse order) for gap checking
   const sorted = [...sectors].sort((a,b) => (a.seqIndex??0) - (b.seqIndex??0));
 
@@ -2712,7 +2716,7 @@ renderTierGauge({tier1Min:0,tier2Min:0,actingCMMin:0,overrideUsed:false,totalBlo
 // ---------- Category selector wiring ----------
 function updateCatUI() {
   const cat = state.category;
-  const labels = { CS: 'Cabin Supervisor', CM: 'Cabin Manager', FA_SENIOR: 'Flight Attendant C3', FA_JUNIOR: 'Flight Attendant C1 / C2' };
+  const labels = { CS: 'Cabin Supervisor', CM: 'Cabin Manager', FA_SENIOR: 'Flight Attendant C3', FA_JUNIOR: 'Flight Attendant C1 / C2', FA_C: 'Flight Attendant C' };
   const label = labels[cat] || cat;
   const desig = document.getElementById('topDesig');
   if (desig) desig.textContent = label;
