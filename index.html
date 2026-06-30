@@ -858,6 +858,16 @@ table.flights tr.warn-row td{background:rgba(245,158,11,.06)!important;}
     <button id="btnCategoryConfirm" disabled style="width:100%;background:var(--purple);color:#fff;border:none;border-radius:12px;padding:15px;font-size:.86rem;font-weight:700;cursor:pointer;font-family:var(--sans);opacity:.4;transition:opacity .2s;">Confirm &amp; Open Calculator</button>
   </div>
 </div>
+<!-- STYLED CONFIRM MODAL -->
+<div id="confirm-modal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--card);border:1px solid var(--b1);border-radius:18px;max-width:320px;width:100%;padding:24px 20px;box-shadow:0 12px 48px rgba(0,0,0,.6);">
+    <div id="confirm-modal-msg" style="font-size:.92rem;font-weight:600;color:var(--tx1);text-align:center;margin-bottom:22px;line-height:1.5;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <button id="confirm-no" style="padding:13px;border-radius:12px;border:1.5px solid var(--b2);background:transparent;color:var(--tx2);font-size:.85rem;font-weight:700;cursor:pointer;font-family:var(--sans);">No</button>
+      <button id="confirm-yes" style="padding:13px;border-radius:12px;border:none;background:var(--purple);color:#fff;font-size:.85rem;font-weight:700;cursor:pointer;font-family:var(--sans);">Yes</button>
+    </div>
+  </div>
+</div>
 <!-- PWA INSTALL BANNER -->
 <div id="pwa-install-banner" style="display:none;position:fixed;bottom:calc(var(--nav-h) + 12px);left:12px;right:12px;z-index:998;background:var(--card2);border:1px solid var(--b2);border-radius:14px;padding:13px 16px;align-items:center;gap:12px;box-shadow:0 4px 24px rgba(0,0,0,.5);"><span style="font-size:1.4rem;">&#128268;</span><div style="flex:1;min-width:0;"><div style="font-size:.8rem;font-weight:700;color:var(--tx1);">Add to Home Screen</div><div style="font-size:.66rem;color:var(--tx2);margin-top:2px;">Works offline</div></div><button id="pwa-install-btn" style="background:var(--purple);color:#fff;border:none;border-radius:10px;padding:10px 14px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:var(--sans);white-space:nowrap;flex-shrink:0;">Install</button><button id="pwa-install-dismiss" style="background:none;border:none;color:var(--tx3);font-size:1.1rem;cursor:pointer;padding:6px;line-height:1;flex-shrink:0;">&#10005;</button></div>
 
@@ -1966,7 +1976,7 @@ function deleteFlight(idx) {
   renderFlightTable();
 }
 
-function openEditFlight(idx) {
+async function openEditFlight(idx) {
   const flights = getAllFlights();
   const f = flights[idx];
   const orig = prompt('Departure station (3-letter code):', f.orig || '');
@@ -1978,15 +1988,16 @@ function openEditFlight(idx) {
   const ata = prompt('Arrival time (HH:MM, local to arrival station):', f.ata || '');
   if (ata === null) return;
   const dutyType = prompt('Duty type (Turn / Layover):', f.dutyType || 'Turn');
-  const isPassengering = confirm('Is this a Passengering (P) flight?');
+  const isPassengering = await showConfirm('Is this a Passengering (P) flight?');
   const _al = getRates().actingLabel;
-  const actingCM = _al ? confirm(`Was this flight Acting ${_al}?`) : false;
+  const actingCM = _al ? await showConfirm(`Was this flight Acting ${_al}?`) : false;
 
   f.orig = orig.toUpperCase().trim();
   f.atd = atd.trim();
   f.dest = dest.toUpperCase().trim();
   f.ata = ata.trim();
-  f.dutyType = dutyType.trim();
+  f.dutyType = dutyType ? dutyType.trim() : f.dutyType;
+  f._manualDutyType = f.dutyType; // sticky — survives groupIntoDuties re-classification
   f.isPassengering = isPassengering;
   f.actingCM = actingCM;
 
@@ -1997,7 +2008,7 @@ function openEditFlight(idx) {
   renderFlightTable();
 }
 
-$('btnAddManualFlight').addEventListener('click', () => {
+$('btnAddManualFlight').addEventListener('click', async () => {
   const date = prompt('Date (e.g. 05MON):', '');
   if (date === null) return;
   const flightNo = prompt('Flight number (e.g. UL123):', '');
@@ -2011,9 +2022,9 @@ $('btnAddManualFlight').addEventListener('click', () => {
   const ata = prompt('Arrival time (HH:MM):', '');
   if (ata === null) return;
   const dutyType = prompt('Duty type (Turn / Layover):', 'Turn');
-  const isPassengering = confirm('Is this a Passengering (P) flight?');
+  const isPassengering = await showConfirm('Is this a Passengering (P) flight?');
   const _al2 = getRates().actingLabel;
-  const actingCM = _al2 ? confirm(`Was this flight Acting ${_al2}?`) : false;
+  const actingCM = _al2 ? await showConfirm(`Was this flight Acting ${_al2}?`) : false;
 
   const r = calcBlockMinutes(orig.toUpperCase().trim(), atd.trim(), dest.toUpperCase().trim(), ata.trim(), false);
   state.manualFlights.push({
@@ -2049,6 +2060,13 @@ function calculateSalary() {
   }
 
   groupIntoDuties(flights, state.nonFlightMarkers);
+
+  // Restore any manually-edited dutyTypes (groupIntoDuties re-derives and overwrites them)
+  flights.forEach(f => {
+    if (f._manualDutyType) {
+      flights.filter(x => x.dutyId === f.dutyId).forEach(x => x.dutyType = f._manualDutyType);
+    }
+  });
 
   const basicSalary = parseFloat($('basicSalary').value) || 0;
   const premiumAllowance = parseFloat($('premiumAllowance').value) || 0;
@@ -2406,12 +2424,14 @@ function applyInputs(inputs) {
 function renderHistoryPanel() {
   const allHistory = JSON.parse(localStorage.getItem('sla_salary_history') || '{}');
   const panel = $('historyPanel');
+  panel.style.display = '';
   const keys = Object.keys(allHistory);
   if (!keys.length) {
-    panel.innerHTML = '<div style="color:var(--muted); font-size:.85rem;">No saved months yet.</div>';
+    panel.innerHTML = '<div style="color:var(--tx3); font-size:.85rem;margin-top:8px;">No saved months yet.</div>';
     return;
   }
-  panel.innerHTML = keys.map(k => `<span class="month-tag" data-key="${k}">${k} <span class="del" data-key="${k}">&times;</span></span>`).join('');
+  panel.innerHTML = '<div style="font-size:.72rem;color:var(--tx3);margin-bottom:6px;font-family:var(--mono);letter-spacing:.05em;">SAVED MONTHS — tap to load</div>' +
+    keys.map(k => `<span class="month-tag" data-key="${k}">${k} <span class="del" data-key="${k}">&times;</span></span>`).join('');
   panel.querySelectorAll('.month-tag').forEach(tag => {
     tag.addEventListener('click', (e) => {
       if (e.target.classList.contains('del')) return;
@@ -2419,14 +2439,16 @@ function renderHistoryPanel() {
       const data = allHistory[k];
       applyInputs(data.inputs);
       $('monthYear').value = k;
+      state.lastCalculation = data.calculation;
       renderResults(data.calculation);
+      goTo('page-home');
     });
   });
   panel.querySelectorAll('.del').forEach(del => {
-    del.addEventListener('click', (e) => {
+    del.addEventListener('click', async (e) => {
       e.stopPropagation();
       const k = del.dataset.key;
-      if (!confirm(`Delete saved data for ${k}?`)) return;
+      if (!await showConfirm(`Delete saved data for ${k}?`)) return;
       delete allHistory[k];
       localStorage.setItem('sla_salary_history', JSON.stringify(allHistory));
       renderHistoryPanel();
@@ -2674,6 +2696,21 @@ document.querySelectorAll('.cat-btn').forEach(b => {
 });
 
 updateCatUI();
+
+// ---------- Styled confirm modal helper ----------
+function showConfirm(message) {
+  return new Promise(resolve => {
+    const modal = $('confirm-modal');
+    $('confirm-modal-msg').textContent = message;
+    modal.style.display = 'flex';
+    const cleanup = (result) => {
+      modal.style.display = 'none';
+      resolve(result);
+    };
+    $('confirm-yes').onclick = () => cleanup(true);
+    $('confirm-no').onclick  = () => cleanup(false);
+  });
+}
 
 // ---------- Hidden admin reset: tap designation 5x rapidly ----------
 (function() {
