@@ -1855,20 +1855,12 @@ function calculateOvernightAllowance(sectors, rateUSD) {
     if (group[0].dutyType !== 'Turn') return;
 
     const first = group[0];
-    // Use check-in time if available, otherwise fall back to ATD
-    const checkInMin = timeToMinutes(first.checkIn) ?? timeToMinutes(first.atd);
-    if (checkInMin === null || checkInMin === undefined) return;
+    // Start elapsed from first ATD — check-in padding excluded per rule:
+    // midnight must be crossed inside the actual flight/turnaround duration.
+    const firstAtdMin = timeToMinutes(first.atd);
+    if (firstAtdMin === null || firstAtdMin === undefined) return;
 
-    // Build total elapsed duty time from check-in to final ATA
     let elapsed = 0;
-
-    // Gap from check-in to first ATD
-    const firstAtd = timeToMinutes(first.atd);
-    if (firstAtd !== null && firstAtd !== undefined) {
-      let preDepGap = firstAtd - checkInMin;
-      if (preDepGap < 0) preDepGap += 1440; // check-in before midnight, ATD after
-      elapsed += preDepGap;
-    }
 
     for (let i = 0; i < group.length; i++) {
       const sec = group[i];
@@ -1893,8 +1885,8 @@ function calculateOvernightAllowance(sectors, rateUSD) {
       }
     }
 
-    // Duty crosses midnight if check-in + elapsed >= 1440 min (24 hrs)
-    const crossesMidnight = (checkInMin + elapsed) >= 1440;
+    // Duty crosses midnight if ATD + elapsed >= 1440 min (24 hrs)
+    const crossesMidnight = (firstAtdMin + elapsed) >= 1440;
     if (crossesMidnight) {
       count++;
       details.push({ date: first.date, flightNo: first.flightNo, elapsed, checkInMin });
