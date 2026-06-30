@@ -1889,7 +1889,7 @@ function calculateOvernightAllowance(sectors, rateUSD) {
     const crossesMidnight = (firstAtdMin + elapsed) >= 1440;
     if (crossesMidnight) {
       count++;
-      details.push({ date: first.date, flightNo: first.flightNo, elapsed, checkInMin });
+      details.push({ date: first.date, flightNo: first.flightNo, elapsed });
     }
   });
 
