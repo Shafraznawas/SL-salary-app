@@ -2926,11 +2926,9 @@ if ('serviceWorker' in navigator) {
 </script>
 
 <script>
-// ── DISCLAIMER: show once per device ──────────────────────
+// ── DISCLAIMER: show every time the app opens ─────────────
 (function(){
-  if(!localStorage.getItem('sla_disclaimer_v2')){
-    document.getElementById('disclaimer-overlay').style.display='flex';
-  }
+  document.getElementById('disclaimer-overlay').style.display='flex';
 })();
 
 // ── PWA INSTALL PROMPT ─────────────────────────────────────
@@ -3013,7 +3011,7 @@ window.addEventListener('appinstalled', function(){
 
 
 <script>
-(function(){var o=document.getElementById('btnDisclaimerOk');if(o)o.addEventListener('click',function(){localStorage.setItem('sla_disclaimer_v2','1');document.getElementById('disclaimer-overlay').style.display='none';});var d=document.getElementById('pwa-install-dismiss');if(d)d.addEventListener('click',function(){document.getElementById('pwa-install-banner').style.display='none';});})();
+(function(){var o=document.getElementById('btnDisclaimerOk');if(o)o.addEventListener('click',function(){document.getElementById('disclaimer-overlay').style.display='none';});var d=document.getElementById('pwa-install-dismiss');if(d)d.addEventListener('click',function(){document.getElementById('pwa-install-banner').style.display='none';});})();
 </script>
 </body>
 </html>
