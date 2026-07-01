@@ -3013,5 +3013,122 @@ window.addEventListener('appinstalled', function(){
 <script>
 (function(){var o=document.getElementById('btnDisclaimerOk');if(o)o.addEventListener('click',function(){document.getElementById('disclaimer-overlay').style.display='none';});var d=document.getElementById('pwa-install-dismiss');if(d)d.addEventListener('click',function(){document.getElementById('pwa-install-banner').style.display='none';});})();
 </script>
+
+<!-- ══════════════════════════════════════════════════════════════
+     TRIAL / LICENSE SYSTEM — fully additive, isolated block.
+     Set TRIAL_ENABLED = true to activate. While false this whole
+     block is a guaranteed no-op (single early-return, nothing else
+     runs — no localStorage writes, no DOM changes, no listeners).
+     Delete this entire <script> tag to remove the system cleanly.
+     Shares its key formula 1:1 with the standalone key_generator.html
+     — keep _LIC_SALT identical in both files.
+     ══════════════════════════════════════════════════════════════ -->
+<script>
+const TRIAL_ENABLED = false;
+
+if (TRIAL_ENABLED) (function(){
+  const TRIAL_DAYS = 20;
+  const OWNER_SECRET = 'REPLACE_WITH_YOUR_OWNER_SECRET';       // TODO: set before launch
+  const OWNER_WHATSAPP = '94700000000';                        // TODO: your WhatsApp number, country code first, no + no spaces
+  const _LIC_SALT = 'SLA-FLYPROFIT-2026';                      // TODO: change once, then keep identical in key_generator.html
+
+  function _hashStr(s) {
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) { h = ((h << 5) + h) + s.charCodeAt(i); h = h | 0; }
+    return h >>> 0;
+  }
+
+  function _deviceCode() {
+    const raw = [
+      navigator.userAgent,
+      screen.width + 'x' + screen.height,
+      screen.colorDepth,
+      navigator.hardwareConcurrency || 0,
+      navigator.language,
+      (Intl.DateTimeFormat().resolvedOptions().timeZone || ''),
+      navigator.platform || ''
+    ].join('|');
+    return _hashStr(raw).toString(36).toUpperCase().padStart(7, '0').slice(0, 7);
+  }
+
+  function _codeToKey(code) {
+    const combined = code.split('').reverse().join('') + _LIC_SALT;
+    const h = _hashStr(combined).toString(36).toUpperCase().padStart(8, '0').slice(0, 8);
+    return h.slice(0, 4) + '-' + h.slice(4, 8);
+  }
+
+  const params = new URLSearchParams(location.search);
+
+  // Owner bypass — permanent whitelist, forever
+  if (params.get('owner') === OWNER_SECRET) {
+    localStorage.setItem('sla_owner_whitelisted', '1');
+  }
+  if (localStorage.getItem('sla_owner_whitelisted') === '1') return;
+
+  // Already activated on this device
+  if (localStorage.getItem('sla_licensed') === '1') return;
+
+  // Trial start timestamp (set once, real users only — simulate_day never touches this)
+  let start = localStorage.getItem('sla_trial_start');
+  if (!start) {
+    start = Date.now().toString();
+    localStorage.setItem('sla_trial_start', start);
+  }
+
+  // Testing backdoor — in-memory only, never persisted, never affects real users
+  let elapsedDays;
+  const simDay = params.get('simulate_day');
+  if (simDay !== null && !isNaN(parseInt(simDay, 10))) {
+    elapsedDays = parseInt(simDay, 10);
+  } else {
+    elapsedDays = Math.floor((Date.now() - parseInt(start, 10)) / 86400000);
+  }
+
+  if (elapsedDays < TRIAL_DAYS) return; // still inside trial window — do nothing
+
+  // ---- Trial expired: build and show the lock screen ----
+  const code = _deviceCode();
+
+  function showLock() {
+    if (document.getElementById('sla-lock-overlay')) return;
+    const ov = document.createElement('div');
+    ov.id = 'sla-lock-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0b0e1a;display:flex;align-items:center;justify-content:center;padding:24px;';
+    ov.innerHTML = `
+      <div style="max-width:380px;width:100%;background:#151a2e;border:1px solid rgba(124,58,237,.3);border-radius:16px;padding:28px 22px;text-align:center;font-family:sans-serif;color:#e2e8f0;">
+        <div style="font-size:2rem;margin-bottom:10px;">🔒</div>
+        <div style="font-size:1.05rem;font-weight:700;margin-bottom:6px;">Trial Period Ended</div>
+        <div style="font-size:.78rem;color:#94a3b8;margin-bottom:18px;">Your ${TRIAL_DAYS}-day trial has expired. Contact the developer to activate your license.</div>
+        <div style="font-size:.62rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Your Device Code</div>
+        <div id="sla-device-code" style="font-family:monospace;font-size:1.3rem;font-weight:700;letter-spacing:.1em;color:#c084fc;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:10px;padding:10px;margin-bottom:16px;">${code}</div>
+        <a id="sla-wa-btn" href="#" target="_blank" rel="noopener" style="display:block;background:#25D366;color:#fff;text-decoration:none;border-radius:10px;padding:12px;font-weight:700;font-size:.85rem;margin-bottom:14px;">📱 Send via WhatsApp</a>
+        <div style="font-size:.62rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;text-align:left;">Enter Activation Key</div>
+        <input id="sla-key-input" type="text" placeholder="XXXX-XXXX" autocomplete="off" style="width:100%;box-sizing:border-box;background:#0b0e1a;border:1.5px solid rgba(255,255,255,.12);border-radius:10px;padding:11px;color:#e2e8f0;font-family:monospace;font-size:.95rem;text-align:center;letter-spacing:.08em;margin-bottom:10px;text-transform:uppercase;">
+        <button id="sla-activate-btn" style="width:100%;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;font-size:.85rem;cursor:pointer;">Activate</button>
+        <div id="sla-activate-err" style="font-size:.68rem;color:#f87171;margin-top:10px;display:none;">Invalid key for this device. Please check and try again.</div>
+      </div>`;
+    document.body.appendChild(ov);
+    document.body.style.overflow = 'hidden';
+
+    const waMsg = encodeURIComponent('Hi, my SLA Salary Calculator trial has ended. My device code is: ' + code);
+    document.getElementById('sla-wa-btn').href = 'https://wa.me/' + OWNER_WHATSAPP + '?text=' + waMsg;
+
+    document.getElementById('sla-activate-btn').addEventListener('click', function() {
+      const entered = document.getElementById('sla-key-input').value.trim().toUpperCase();
+      const expected = _codeToKey(code);
+      if (entered === expected) {
+        localStorage.setItem('sla_licensed', '1');
+        ov.remove();
+        document.body.style.overflow = '';
+      } else {
+        document.getElementById('sla-activate-err').style.display = 'block';
+      }
+    });
+  }
+
+  if (document.body) showLock();
+  else document.addEventListener('DOMContentLoaded', showLock);
+})();
+</script>
 </body>
 </html>

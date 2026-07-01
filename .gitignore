@@ -1,0 +1,3 @@
+# Private tool — must never be pushed to the public repo.
+# Generates activation keys; keep this file local only.
+key_generator.html
