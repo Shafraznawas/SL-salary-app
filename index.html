@@ -468,6 +468,7 @@ body{background:var(--bg);color:var(--tx1);font-family:var(--sans);display:flex;
 .tb-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
 .tb-clock{font-size:.62rem;font-family:var(--mono);color:var(--cyan);background:rgba(0,200,240,.08);border:1px solid rgba(0,200,240,.15);border-radius:20px;padding:4px 10px;white-space:nowrap;}
 .tb-calc{background:linear-gradient(135deg,#7c3aed,#a855f7);border:none;color:#f0e0ff;border-radius:22px;padding:9px 16px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:var(--sans);box-shadow:0 0 18px rgba(124,58,237,.4);display:flex;align-items:center;gap:5px;white-space:nowrap;}
+.tb-install{background:rgba(124,58,237,.12);border:1.5px solid var(--purple2);color:var(--purple3);border-radius:22px;padding:9px 14px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:var(--sans);display:flex;align-items:center;gap:5px;white-space:nowrap;}
 
 /* PAGES */
 .scroll-area{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:14px 14px 24px;display:flex;flex-direction:column;gap:12px;}
@@ -626,6 +627,7 @@ table.flights tr.warn-row td{background:rgba(245,158,11,.06)!important;}
   </div>
   <div class="tb-right">
     <div class="tb-clock" id="utcClock">--:--:--</div>
+    <button class="tb-install" id="btnInstallApp" style="display:none;">⬇ Install</button>
     <button class="tb-calc" id="btnCalculate">⚡ Calculate</button>
   </div>
 </div>
@@ -2933,31 +2935,78 @@ if ('serviceWorker' in navigator) {
 
 // ── PWA INSTALL PROMPT ─────────────────────────────────────
 let _deferredInstallPrompt = null;
+const _topBtn = document.getElementById('btnInstallApp');
+const _isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+const _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+function _setInstallBtn(mode) {
+  if (!_topBtn) return;
+  if (mode === 'installed') {
+    _topBtn.textContent = '✅ Open App';
+    _topBtn.style.display = 'flex';
+  } else if (mode === 'install') {
+    _topBtn.textContent = '⬇ Install';
+    _topBtn.style.display = 'flex';
+  } else {
+    _topBtn.style.display = 'none';
+  }
+}
+
+if (_isStandalone) {
+  // Already running as the installed app — no need to show anything
+  localStorage.setItem('sla_installed', '1');
+  _setInstallBtn('none');
+} else if (localStorage.getItem('sla_installed') === '1') {
+  // Installed previously (in another tab/session) but this tab is a regular browser tab
+  _setInstallBtn('installed');
+} else if (_isIOS) {
+  // iOS Safari never fires beforeinstallprompt — show button with manual instructions
+  _setInstallBtn('install');
+} else {
+  _setInstallBtn('none'); // hidden until beforeinstallprompt fires (Android/Chrome)
+}
+
 window.addEventListener('beforeinstallprompt', function(e) {
   e.preventDefault();
   _deferredInstallPrompt = e;
-  // Show banner after 3 seconds if not installed
+  _setInstallBtn('install');
+  // Also show the bottom banner after 3 seconds as a secondary nudge
   setTimeout(function(){
     var banner = document.getElementById('pwa-install-banner');
     if(banner) banner.style.display='flex';
   }, 3000);
 });
 
-document.getElementById('pwa-install-btn')?.addEventListener('click', function(){
+function _handleInstallClick() {
   var banner = document.getElementById('pwa-install-banner');
   if(banner) banner.style.display='none';
-  if(_deferredInstallPrompt){
+
+  if (localStorage.getItem('sla_installed') === '1' && !_deferredInstallPrompt) {
+    // Already installed — try to hand off to the installed app
+    window.location.href = './';
+    return;
+  }
+  if (_deferredInstallPrompt) {
     _deferredInstallPrompt.prompt();
     _deferredInstallPrompt.userChoice.then(function(result){
       _deferredInstallPrompt = null;
     });
+    return;
   }
-});
+  if (_isIOS) {
+    alert('To install: tap the Share icon (□↑) in Safari\'s toolbar, then choose "Add to Home Screen".');
+  }
+}
+
+document.getElementById('pwa-install-btn')?.addEventListener('click', _handleInstallClick);
+_topBtn?.addEventListener('click', _handleInstallClick);
 
 window.addEventListener('appinstalled', function(){
   var banner = document.getElementById('pwa-install-banner');
   if(banner) banner.style.display='none';
   _deferredInstallPrompt = null;
+  localStorage.setItem('sla_installed', '1');
+  _setInstallBtn('installed');
   console.log('[PWA] App installed successfully');
 });
 </script>
