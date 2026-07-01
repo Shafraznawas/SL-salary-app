@@ -1,13 +1,13 @@
-﻿// SLA Salary Portal — Service Worker v74
-const CACHE = 'sla-salary-v98';
+﻿// SLA Salary Portal — Service Worker v75
+const CACHE = 'sla-salary-v99';
 
 const ASSETS = [
-  '/SL-salary-app/',
-  '/SL-salary-app/index.html',
-  '/SL-salary-app/manifest.json',
-  '/SL-salary-app/icon-192.jpg',
-  '/SL-salary-app/icon-512.jpg',
-  '/SL-salary-app/stations.json',
+  './',
+  './index.html',
+  './manifest.json',
+  './icon-192.jpg',
+  './icon-512.jpg',
+  './stations.json',
 ];
 
 self.addEventListener('install', e => {
