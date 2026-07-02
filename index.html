@@ -736,6 +736,7 @@ table.flights tr.warn-row td{background:rgba(245,158,11,.06)!important;}
 
     <div class="action-row">
       <button class="act-btn pur" id="btnExportPDF">🖨 Print PDF</button>
+      <button class="act-btn" id="btnSaveMonth">💾 Save This Month</button>
     </div>
   </div>
 
@@ -2475,8 +2476,16 @@ function renderHistoryPanel() {
     panel.innerHTML = '<div style="color:var(--tx3); font-size:.85rem;margin-top:8px;">No saved months yet.</div>';
     return;
   }
+  const sortedKeys = [...keys].sort();
   panel.innerHTML = '<div style="font-size:.72rem;color:var(--tx3);margin-bottom:6px;font-family:var(--mono);letter-spacing:.05em;">SAVED MONTHS — tap to load</div>' +
-    keys.map(k => `<span class="month-tag" data-key="${k}">${k} <span class="del" data-key="${k}">&times;</span></span>`).join('');
+    keys.map(k => `<span class="month-tag" data-key="${k}">${k} <span class="del" data-key="${k}">&times;</span></span>`).join('') +
+    '<div style="font-size:.72rem;color:var(--tx3);margin:14px 0 6px;font-family:var(--mono);letter-spacing:.05em;">COMPARISON</div>' +
+    '<table class="flights" style="width:100%;"><thead><tr><th>Month</th><th>Net Pay</th><th>Block Hours</th></tr></thead><tbody>' +
+    sortedKeys.map(k => {
+      const c = allHistory[k].calculation;
+      return `<tr><td>${k}</td><td>${fmtLKR(c.finalNet)}</td><td>${minutesToHHMM(c.flyingPay.totalBlockMin)}</td></tr>`;
+    }).join('') +
+    '</tbody></table>';
   panel.querySelectorAll('.month-tag').forEach(tag => {
     tag.addEventListener('click', (e) => {
       if (e.target.classList.contains('del')) return;
@@ -2500,6 +2509,20 @@ function renderHistoryPanel() {
     });
   });
 }
+
+// ---------- Save Month (for history / comparison) ----------
+$('btnSaveMonth').addEventListener('click', () => {
+  if (!state.lastCalculation) { alert('Please calculate the salary first.'); return; }
+  const allHistory = JSON.parse(localStorage.getItem('sla_salary_history') || '{}');
+  const key = getMonthKey();
+  allHistory[key] = {
+    inputs: collectInputs(),
+    calculation: state.lastCalculation
+  };
+  localStorage.setItem('sla_salary_history', JSON.stringify(allHistory));
+  renderHistoryPanel();
+  alert(`Saved ${key}.`);
+});
 
 // ---------- PDF Export ----------
 $('btnExportPDF').addEventListener('click', () => {
