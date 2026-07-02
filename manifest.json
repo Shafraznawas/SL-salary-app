@@ -1,6 +1,6 @@
 {
-  "name": "SLA Crew Salary Calculator",
-  "short_name": "SLA Salary",
+  "name": "FlyProfit",
+  "short_name": "FlyProfit",
   "description": "SriLankan Airlines Cabin Crew Salary Calculator by SR Creation",
   "start_url": "./",
   "scope": "./",
